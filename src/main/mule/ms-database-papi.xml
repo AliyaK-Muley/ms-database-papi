@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+    <http:listener-config name="ms-database-papi-httpListenerConfig">
+        <http:listener-connection host="localhost" port="8087" />
+    </http:listener-config>
+    <apikit:config name="ms-database-papi-config" api="resource::110f174b-223c-482b-9e4b-1eae76c3f526:ms-database-papi:1.0.0:raml:zip:ms-database-papi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <configuration doc:name="Configuration" doc:id="ccdeb9c4-67a5-4b42-abb3-25e31ab53903" defaultErrorHandler-ref="errorhandlerError_Handler" />
+	<http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="d8ae5ecd-318e-4cb7-8e60-6e886b38b357" basePath="/api">
+		<http:request-connection host="localhost" port="8081" connectionIdleTimeout="300000"/>
+	</http:request-config>
+	<flow name="ms-database-papi-main">
+        <http:listener config-ref="ms-database-papi-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="ms-database-papi-config" />
+		<error-handler ref="errorhandlerError_Handler" />
+    </flow>
+    <flow name="ms-database-papi-console">
+        <http:listener config-ref="ms-database-papi-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="ms-database-papi-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+	<flow name="put:\account\updateAccount:application\json:ms-database-papi-config">
+		<until-successful maxRetries="3" doc:name="Until Successful" doc:id="447c416a-4d66-484c-9331-ba142ca09e45" >
+			<http:request method="PUT" doc:name="Request" doc:id="c2f60482-8969-4c45-ad5a-7febb995e1d9" config-ref="HTTP_Request_configuration1" sendCorrelationId="ALWAYS" path="/account/updateAccount" responseTimeout="300000">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"correlationId" : attributes.headers.correlationId
+}]]]></http:headers>
+		</http:request>
+		</until-successful>
+		<ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  status: "Success",
+  message: 
+  {
+    code: 200,
+    description: "Account Created Successfully " ++ (vars.accountDetails.name default"") ++ " for  having " ++ (vars.accountDetails.accountID default "") ++ " AccountID "   
+    }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\account\fetchAccount\(accountID):ms-database-papi-config">
+		<ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="accountID">attributes.uriParams.'accountID'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		<until-successful maxRetries="3" doc:name="Until Successful" doc:id="8a1e8617-d36a-4f8a-b5c7-c6dbc908622e" >
+			<http:request method="GET" doc:name="Request" doc:id="4ccb5a37-ba95-416a-809e-45488be617ef" config-ref="HTTP_Request_configuration1" path="/account/fetchAccount/{accountID}" sendCorrelationId="ALWAYS" responseTimeout="300000">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"correlationId" : attributes.headers.correlationId
+}]]]></http:headers>
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	"accountID" : attributes.uriParams.accountID
+}]]]></http:uri-params>
+		</http:request>
+		</until-successful>
+		<ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "accountNumber":payload.accountNumber ,
+  "name": payload.name,
+  "contactDetails":
+  {
+    "phoneNo1": payload.contactDetails.phoneNo1,
+    "phoneNo2": payload.contactDetails.phoneNo2,
+    "address": payload.contactDetails.address,
+    "zipCode": payload.contactDetails.zipCode,
+    "city": payload.contactDetails.city,
+    "state": payload.contactDetails.State,
+    "countryCode": payload.contactDetails.countryCode
+   }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\account\createAccount:application\json:ms-database-papi-config">
+		<until-successful maxRetries="3" doc:name="Until Successful" doc:id="ace634cb-e9a5-4feb-bdf7-0941e1eac982" >
+			<http:request method="POST" doc:name="Request" doc:id="0fb2fe45-1828-4ce1-b9f7-df1a6a833674" config-ref="HTTP_Request_configuration1" path="/account/createAccount" sendCorrelationId="ALWAYS" responseTimeout="300000">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"correlationId" : attributes.headers.correlationId
+}]]]></http:headers>
+		</http:request>
+		</until-successful>
+		<ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  status: "Success",
+  message: 
+  {
+    code: 200,
+    description: "Account Created Successfully " ++ (vars.accountDetails.name ) ++ " for  having " ++ (vars.accountDetails.accountID ) ++ " AccountID "   
+    }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>
