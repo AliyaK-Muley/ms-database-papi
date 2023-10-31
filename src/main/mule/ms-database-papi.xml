@@ -136,7 +136,7 @@ output application/json
   message: 
   {
     code: 200,
-    description: "Account Created Successfully " ++ (vars.accountDetails.name ) ++ " for  having " ++ (vars.accountDetails.accountID ) ++ " AccountID "   
+    description: "Account Created Successfully " ++ (vars.accountDetails.name default "") ++ " for  having " ++ (vars.accountDetails.accountID default "") ++ " AccountID "   
     }
 }]]></ee:set-payload>
             </ee:message>
