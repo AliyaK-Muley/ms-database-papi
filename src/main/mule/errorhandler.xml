@@ -4,84 +4,50 @@
 	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="errorhandlerSub_Flow" doc:id="7de70da4-763c-41ab-bef4-6a4f83aa8727" >
+		<ee:transform doc:name="Transform Message" doc:id="5056bfb0-be68-4d78-9f9d-c9ecf9d33756">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failure",
+	message:
+	{
+		code : vars.httpStatus,
+		description : (error.errorType.asString default "" ) ++ " " ++ (error.detailedDescription default"") 
+	}
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+				</ee:variables>
+			</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="6ac8c7df-1546-424c-afae-1e799aeed54c" message="#[payload]"/>
+	</sub-flow>
 	<error-handler name="errorhandlerError_Handler" doc:id="3dfa2e7e-48ba-4974-adec-d918695b3423" >
 		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="19ab7ce3-710c-4008-838d-560135462782" type="APIKIT:BAD_REQUEST" >
-			<ee:transform doc:name="Transform Message" doc:id="5056bfb0-be68-4d78-9f9d-c9ecf9d33756" >
-				<ee:message >
-					<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{message: "Bad request"}]]></ee:set-payload>
-				</ee:message>
-				<ee:variables >
-					<ee:set-variable variableName="httpStatus" ><![CDATA[400]]></ee:set-variable>
-				</ee:variables>
-			</ee:transform>
+			<set-variable value="400" doc:name="Set Variable" doc:id="22c0a1ad-1cdb-4f88-874a-4ee6e971e2ea" variableName="httpStatus"/>
+			<flow-ref doc:name="Flow Reference" doc:id="1e8041b7-74d0-4915-98cd-84c934344aef" name="errorhandlerSub_Flow"/>
 		</on-error-propagate>
 		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate1" doc:id="4699350d-7d1e-4e24-bd08-c0077aa7d816" type="APIKIT:NOT_FOUND" >
-			<ee:transform doc:name="Transform Message" doc:id="ae41d7fd-16b6-4d51-8b8c-9b2c60f9a8cd" >
-				<ee:message >
-					<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{message: "Resource not found"}]]></ee:set-payload>
-				</ee:message>
-				<ee:variables >
-					<ee:set-variable variableName="httpStatus" ><![CDATA[404]]></ee:set-variable>
-				</ee:variables>
-			</ee:transform>
+			<set-variable value="404" doc:name="Set Variable" doc:id="234dc8f2-354c-4923-ac61-1724cedc77b1" variableName="httpStatus"/>
+			<flow-ref doc:name="Flow Reference" doc:id="92c17340-28a6-4829-be30-5fce47ee45c0" name="errorhandlerSub_Flow"/>
 		</on-error-propagate>
 		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate2" doc:id="1b7da679-3907-4f8c-9820-321380d8d9b2" type="APIKIT:METHOD_NOT_ALLOWED" >
-			<ee:transform doc:name="Transform Message" doc:id="07a60b64-68c5-444d-b09f-20ed2b305450" >
-				<ee:message >
-					<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{message: "Method not allowed"}]]></ee:set-payload>
-				</ee:message>
-				<ee:variables >
-					<ee:set-variable variableName="httpStatus" ><![CDATA[405]]></ee:set-variable>
-				</ee:variables>
-			</ee:transform>
+			<set-variable value="405" doc:name="Set Variable" doc:id="e57a2759-25e2-4b00-a790-cd9c11b064a2" variableName="httpStatus"/>
+			<flow-ref doc:name="Flow Reference" doc:id="3e195ac6-19e3-484d-b2d2-823adc0529b1" name="errorhandlerSub_Flow"/>
 		</on-error-propagate>
 		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate3" doc:id="011b4954-6953-4b9b-a14f-d5680f434883" type="APIKIT:NOT_ACCEPTABLE" >
-			<ee:transform doc:name="Transform Message" doc:id="73d6f733-02f2-418e-b789-d42bfeedacd4" >
-				<ee:message >
-					<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{message: "Not acceptable"}]]></ee:set-payload>
-				</ee:message>
-				<ee:variables >
-					<ee:set-variable variableName="httpStatus" ><![CDATA[406]]></ee:set-variable>
-				</ee:variables>
-			</ee:transform>
+			<set-variable value="406" doc:name="Set Variable" doc:id="ed945c39-5fa5-4c22-9fde-52c6811c4918" variableName="httpStatus"/>
+			<flow-ref doc:name="Flow Reference" doc:id="6755f4b1-6086-4297-8fc2-ceaa09a5787f" name="errorhandlerSub_Flow"/>
 		</on-error-propagate>
 		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate4" doc:id="01305652-b802-488d-94a8-fe53a1ca469d" type="APIKIT:UNSUPPORTED_MEDIA_TYPE" >
-			<ee:transform doc:name="Transform Message" doc:id="32b19ad4-ecc9-4c27-bd99-0bae99e60fa7" >
-				<ee:message >
-					<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{message: "Unsupported media type"}]]></ee:set-payload>
-				</ee:message>
-				<ee:variables >
-					<ee:set-variable variableName="httpStatus" ><![CDATA[415]]></ee:set-variable>
-				</ee:variables>
-			</ee:transform>
+			<set-variable value="415" doc:name="Set Variable" doc:id="f9dbe95d-d1ed-4400-9c5b-c66fb90e3498" variableName="httpStatus"/>
+			<flow-ref doc:name="Flow Reference" doc:id="591d1351-eae1-41a8-a3d3-8231393e78f4" name="errorhandlerSub_Flow"/>
 		</on-error-propagate>
 		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate5" doc:id="f24fa399-884c-4d89-9f47-06190b5fe1e4" type="APIKIT:NOT_IMPLEMENTED" >
-			<ee:transform doc:name="Transform Message" doc:id="9b8233a3-ffcd-48aa-87e8-6d948df4db5b" >
-				<ee:message >
-					<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{message: "Not Implemented"}]]></ee:set-payload>
-				</ee:message>
-				<ee:variables >
-					<ee:set-variable variableName="httpStatus" ><![CDATA[501]]></ee:set-variable>
-				</ee:variables>
-			</ee:transform>
+			<set-variable value="501" doc:name="Set Variable" doc:id="58811c57-ab07-47c5-8c57-039867c50107" variableName="httpStatus"/>
+			<flow-ref doc:name="Flow Reference" doc:id="5d5756ee-265d-4c92-b52a-7d303916b425" name="errorhandlerSub_Flow"/>
 		</on-error-propagate>
 	</error-handler>
 </mule>
