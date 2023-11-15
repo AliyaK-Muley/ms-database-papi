@@ -49,5 +49,23 @@ output application/json
 			<set-variable value="501" doc:name="Set Variable" doc:id="58811c57-ab07-47c5-8c57-039867c50107" variableName="httpStatus"/>
 			<flow-ref doc:name="Flow Reference" doc:id="5d5756ee-265d-4c92-b52a-7d303916b425" name="errorhandlerSub_Flow"/>
 		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="9a2a5623-60df-41c9-9950-63fccb7e7fab" type="ANY">
+			<set-variable value="503" doc:name="Set Variable" doc:id="0f839d71-5da6-4e22-bf64-f83d71024bc1" variableName="httpStatus"/>
+			<ee:transform doc:name="Transform Message" doc:id="5a64d604-49d0-42cf-b13e-d92e973caa83" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failure",
+	message:
+	{
+		code : vars.httpStatus,
+		description : (error.muleMessage.asString default "" ) ++ " " ++ (error.detailedDescription default"") 
+	}
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
 	</error-handler>
 </mule>

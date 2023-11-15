@@ -1,13 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+<mule xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
     <http:listener-config name="ms-database-papi-httpListenerConfig">
-        <http:listener-connection host="localhost" port="8087" />
+        <http:listener-connection host="0.0.0.0" port="8081" />
     </http:listener-config>
     <apikit:config name="ms-database-papi-config" api="resource::110f174b-223c-482b-9e4b-1eae76c3f526:ms-database-papi:1.0.0:raml:zip:ms-database-papi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     <configuration doc:name="Configuration" doc:id="ccdeb9c4-67a5-4b42-abb3-25e31ab53903" defaultErrorHandler-ref="errorhandlerError_Handler" />
 	<http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="d8ae5ecd-318e-4cb7-8e60-6e886b38b357" basePath="/api">
 		<http:request-connection host="localhost" port="8081" connectionIdleTimeout="300000"/>
 	</http:request-config>
+	<api-gateway:autodiscovery apiId="19088342" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="4b9de0b4-6385-4bd1-bb1b-6cb81ae6b956" flowRef="ms-database-papi-main" />
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="fb61b760-34e4-4c36-b8ec-7d47f4556b3e" >
+		<http:request-connection host="eudv-ms-database-sapi.us-e2.cloudhub.io" />
+		<http:default-headers >
+			<http:default-header key="client_id" value="#[p('secure::databaseSystemAPI.clientId')]" />
+			<http:default-header key="client_secret" value="#[p('secure::databaseSystemAPI.clientSecret')]" />
+		</http:default-headers>
+	</http:request-config>
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="aad5c4e6-1f4a-4500-9252-d8b2fef33646" file="config-sandbox.yaml" key="agi0seqosy0uxgun" />
 	<flow name="ms-database-papi-main">
         <http:listener config-ref="ms-database-papi-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
@@ -49,15 +60,13 @@ output application/json
         </error-handler>
     </flow>
 	<flow name="put:\account\updateAccount:application\json:ms-database-papi-config">
-		<until-successful maxRetries="3" doc:name="Until Successful" doc:id="447c416a-4d66-484c-9331-ba142ca09e45" >
-			<http:request method="PUT" doc:name="Request" doc:id="c2f60482-8969-4c45-ad5a-7febb995e1d9" config-ref="HTTP_Request_configuration1" sendCorrelationId="ALWAYS" path="/account/updateAccount" responseTimeout="300000">
+<!-- [STUDIO:"Request"]		<http:request method="PUT" doc:name="Request" doc:id="c2f60482-8969-4c45-ad5a-7febb995e1d9" config-ref="HTTP_Request_configuration1" sendCorrelationId="ALWAYS" path="/account/updateAccount" responseTimeout="300000">
 			<http:headers><![CDATA[#[output application/java
----
+&#45;&#45;-
 {
 	"correlationId" : attributes.headers.correlationId
-}]]]></http:headers>
-		</http:request>
-		</until-successful>
+}&#93;&#93;&#93;></http:headers>
+		</http:request> [STUDIO] -->
 		<ee:transform doc:name="Transform Message">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
@@ -75,30 +84,28 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="get:\account\fetchAccount\(accountID):ms-database-papi-config">
-		<ee:transform doc:name="Transform Message">
+<!-- [STUDIO:"Transform Message"]		<ee:transform doc:name="Transform Message">
             <ee:variables>
                 <ee:set-variable variableName="accountID">attributes.uriParams.'accountID'</ee:set-variable>
             </ee:variables>
-        </ee:transform>
-		<until-successful maxRetries="3" doc:name="Until Successful" doc:id="8a1e8617-d36a-4f8a-b5c7-c6dbc908622e" >
-			<http:request method="GET" doc:name="Request" doc:id="4ccb5a37-ba95-416a-809e-45488be617ef" config-ref="HTTP_Request_configuration1" path="/account/fetchAccount/{accountID}" sendCorrelationId="ALWAYS" responseTimeout="300000">
+        </ee:transform> [STUDIO] -->
+<!-- [STUDIO:"Request"]		<http:request method="GET" doc:name="Request" doc:id="4ccb5a37-ba95-416a-809e-45488be617ef" config-ref="HTTP_Request_configuration1" path="/account/fetchAccount/{accountID}" sendCorrelationId="ALWAYS" responseTimeout="300000">
 			<http:headers><![CDATA[#[output application/java
----
+&#45;&#45;-
 {
 	"correlationId" : attributes.headers.correlationId
-}]]]></http:headers>
+}&#93;&#93;&#93;></http:headers>
 			<http:uri-params><![CDATA[#[output application/java
----
+&#45;&#45;-
 {
 	"accountID" : attributes.uriParams.accountID
-}]]]></http:uri-params>
-		</http:request>
-		</until-successful>
-		<ee:transform doc:name="Transform Message">
+}&#93;&#93;&#93;></http:uri-params>
+		</http:request> [STUDIO] -->
+<!-- [STUDIO:"Transform Message"]		<ee:transform doc:name="Transform Message">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
----
+&#45;&#45;-
 {
   "accountNumber":payload.accountNumber ,
   "name": payload.name,
@@ -112,20 +119,25 @@ output application/json
     "state": payload.contactDetails.State,
     "countryCode": payload.contactDetails.countryCode
    }
-}]]></ee:set-payload>
+}&#93;&#93;></ee:set-payload>
             </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="post:\account\createAccount:application\json:ms-database-papi-config">
-		<until-successful maxRetries="3" doc:name="Until Successful" doc:id="ace634cb-e9a5-4feb-bdf7-0941e1eac982" >
-			<http:request method="POST" doc:name="Request" doc:id="0fb2fe45-1828-4ce1-b9f7-df1a6a833674" config-ref="HTTP_Request_configuration1" path="/account/createAccount" sendCorrelationId="ALWAYS" responseTimeout="300000">
-			<http:headers><![CDATA[#[output application/java
+        </ee:transform> [STUDIO] -->
+		<http:request method="POST" doc:name="Request" doc:id="106ffaa9-f4e7-4b57-a59b-8b0467aadb70" config-ref="HTTP_Request_configuration" path="/account/fetchAccount/{accountID}">
+			<http:uri-params ><![CDATA[#[output application/java
 ---
 {
-	"correlationId" : attributes.headers.correlationId
-}]]]></http:headers>
+	"accountID" : attributes.uriParams.accountID
+}]]]></http:uri-params>
 		</http:request>
-		</until-successful>
+    </flow>
+    <flow name="post:\account\createAccount:application\json:ms-database-papi-config">
+<!-- [STUDIO:"Request"]		<http:request method="POST" doc:name="Request" doc:id="0fb2fe45-1828-4ce1-b9f7-df1a6a833674" config-ref="HTTP_Request_configuration1" path="/account/createAccount" sendCorrelationId="ALWAYS" responseTimeout="300000">
+			<http:headers><![CDATA[#[output application/java
+&#45;&#45;-
+{
+	"correlationId" : attributes.headers.correlationId
+}&#93;&#93;&#93;></http:headers>
+		</http:request> [STUDIO] -->
 		<ee:transform doc:name="Transform Message">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0

@@ -1,0 +1,4 @@
+databaseSystemAPI:
+  host: "eudv-ms-database-sapi.us-e2.cloudhub.io"
+  clientId: "![ExTiKVNwpLV6CQ56762pyYJ3K8JDxRTHCGgC2vODbRn8Vh2xr89ppGphW1vDZ3uG]"
+  clientSecret: "![EenCseHDMwKzFK+Idp1YFIm8ZzgsUexivfLeUC3yGluxG7cbljtbuthEhFMl9gCz]"
